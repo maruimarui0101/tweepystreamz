@@ -2,20 +2,19 @@ import tweepy
 import os 
 from dotenv import load_dotenv
 import socket 
+import json
 
 load_dotenv()
 
-host = socket.gethostname() 
-port = 12345                   
+HOST = socket.gethostbyname('d799daa0e411.ngrok.io')
+PORT = 14734
 
 class ClientSocket():
     @staticmethod
     def create():
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-        s.connect((host, port))
+        s.connect((HOST, PORT))
         return s
-
-client = ClientSocket.create()
 
 class TwitterAuth():
 
@@ -27,11 +26,24 @@ class TwitterAuth():
 
 class MyStreamListener(tweepy.StreamListener):
     
-    def on_status(self, status):
-        client.sendall(status.text.encode())
+    def on_data(self, data):
+        try: 
+            msg = json.loads(data)['text'].encode('utf-8')
+            print(msg)
+            client.send(msg)
+            return True
+        except BaseException as e:
+            print('ERROR ' + str(e))
+            return True
 
-MyStreamListener = MyStreamListener()
-myStream = tweepy.Stream(auth=TwitterAuth.authenticate()
-, listener=MyStreamListener)
+    def on_error(self, status):
+        print(status)
+        return True
 
-myStream.filter(track=['$GME'])
+
+if __name__ == '__main__':
+    client = ClientSocket.create()
+    MyStreamListener = MyStreamListener()
+    myStream = tweepy.Stream(auth=TwitterAuth.authenticate()
+    , listener=MyStreamListener)
+    myStream.filter(track=['$GME'])
